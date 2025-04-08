@@ -35,7 +35,7 @@ internal fun SwipeableCard(
     animations: SwipeableCardsAnimations,
     factors: SwipeableCardsFactors,
     draggable: Boolean,
-    scale: Float,
+    scale: Pair<Float,Float>,
     onDragOffsetChange: (Offset) -> Unit,
     onSwipe: (SwipeableCardDirection) -> Unit,
     content: @Composable (Offset) -> Unit,
@@ -65,7 +65,7 @@ internal fun SwipeableCard(
 
     Box(
         modifier = modifier
-            .scale(scale)
+            .scale(scaleX = scale.first, scaleY = scale.second)
             .offset {
                 if (isDragging) {
                     internalOffset.round()

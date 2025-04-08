@@ -18,16 +18,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.spartapps.swipeable.demo.data.CardData
+import com.spartapps.swipeable.demo.data.sampleData
 import com.spartapps.swipeablecards.state.rememberSwipeableCardsState
 import com.spartapps.swipeablecards.ui.SwipeableCardDirection
+import com.spartapps.swipeablecards.ui.SwipeableCardsFactors
 import com.spartapps.swipeablecards.ui.lazy.LazySwipeableCards
 import com.spartapps.swipeablecards.ui.lazy.items
+import kotlinx.coroutines.launch
 
 /**
  * Reusable action button component with text label
@@ -69,15 +76,38 @@ fun CardsScreen(
     val state = rememberSwipeableCardsState(
         itemCount = { data.size }
     )
+    val scope = rememberCoroutineScope()
 
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(horizontal = 24.dp),
     ) {
         LazySwipeableCards(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(10.dp),
             state = state,
+            factors = SwipeableCardsFactors(
+                rotationFactor = {
+                    it.x / 100
+                },
+                scaleFactor = { index, state, props ->
+                    val y = 1f - 0.05f * (index - state.currentCardIndex)
+                    1f to y
+                },
+                cardOffsetCalculation = { index, state, props ->
+                    val depth = state.visibleCardsInStack - 1 - (index - state.currentCardIndex)
+                    val xOffset = props.stackedCardsOffset.value * depth
+                    Offset(x = -xOffset, y = 0f)
+                }
+            ),
             onSwipe = { item, direction ->
                 Log.d("CardsScreen", "onSwipe: $item, $direction")
+
+                if(direction == SwipeableCardDirection.Left){
+                    state.moveNext()
+                } else {
+                    scope.launch {
+                        state.rewind()
+                    }
+                }
             },
         ) {
             items(data) { item, index, offset ->
@@ -135,4 +165,13 @@ fun CardsScreen(
             )
         }
     }
+}
+
+@Composable
+@Preview
+fun PreviewScreen(){
+    CardsScreen(
+        data = sampleData,
+        modifier = Modifier
+    )
 }

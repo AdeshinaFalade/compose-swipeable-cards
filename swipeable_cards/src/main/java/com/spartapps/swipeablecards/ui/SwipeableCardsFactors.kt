@@ -29,8 +29,8 @@ data class SwipeableCardsFactors(
         index: Int,
         state: SwipeableCardsState,
         props: SwipeableCardsProperties,
-    ) -> Float = { index, state, props ->
-        1f
+    ) -> Pair<Float, Float> = { index, state, props ->
+        1f to 1f
     },
     val cardOffsetCalculation: (
         index: Int,

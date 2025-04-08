@@ -1,5 +1,8 @@
 package com.spartapps.swipeablecards.state
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -95,7 +98,7 @@ class SwipeableCardsState(
      */
     fun moveNext() {
         swipingVisibleCards.remove(currentCardIndex - 1)
-        if (currentCardIndex < itemCount()) {
+        if (currentCardIndex < itemCount() -  1) {
             currentCardIndex++
             canSwipeBack = currentCardIndex > 0
         }
@@ -117,4 +120,61 @@ class SwipeableCardsState(
         dragOffsets[currentCardIndex] = Offset(targetX, 0f)
         moveNext()
     }
+
+    /**
+     * Programmatically rewinds the card stack to the previous card with an animated transition.
+     *
+     * This method brings back the last dismissed card from off-screen and animates it into view.
+     * It's useful for implementing an "undo" action after a swipe.
+     *
+     * The card will appear from the specified [direction] and smoothly return to its resting position.
+     * Has no effect if the current card is the first in the stack.
+     *
+     * @param direction The direction from which the card should animate in
+     *                  ([SwipeableCardDirection.Left] or [SwipeableCardDirection.Right]).
+     */
+    suspend fun rewind(direction: SwipeableCardDirection = SwipeableCardDirection.Left) {
+        if (currentCardIndex == 0) return // can't go back from first card
+
+        val targetIndex = currentCardIndex - 1
+        currentCardIndex = targetIndex
+        canSwipeBack = currentCardIndex > 0
+
+        // Add to swiping cards to ensure it renders
+        swipingVisibleCards.add(targetIndex)
+
+        // Set initial offset so it looks like it's off-screen
+        val initialX = when (direction) {
+            SwipeableCardDirection.Left -> -size.width.toFloat() * 1.5f
+            SwipeableCardDirection.Right -> size.width.toFloat() * 1.5f
+        }
+
+        dragOffsets[targetIndex] = Offset(initialX, 0f)
+
+        // Animate it into place (offset → 0)
+        animateCardToPosition(targetIndex)
+    }
+
+    private suspend fun animateCardToPosition(index: Int) {
+        val animationSpec = tween<Float>(durationMillis = 300, easing = FastOutSlowInEasing)
+        val initialOffset = dragOffsets[index] ?: Offset.Zero
+
+        // Animate X and Y separately
+        val animX = Animatable(initialOffset.x)
+        val animY = Animatable(initialOffset.y)
+
+
+        animX.animateTo(0f, animationSpec) {
+            dragOffsets[index] = Offset(value, animY.value)
+        }
+        animY.animateTo(0f, animationSpec) {
+            dragOffsets[index] = Offset(animX.value, value)
+        }
+
+
+        // Remove from swiping list when done
+        swipingVisibleCards.remove(index)
+    }
 }
+
+

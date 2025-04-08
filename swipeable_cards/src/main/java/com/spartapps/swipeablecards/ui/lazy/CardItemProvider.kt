@@ -71,7 +71,7 @@ class CardItemProvider<T>(
 
         SwipeableCard(
             onSwipe = { direction ->
-                state.moveNext()
+//                state.moveNext()
                 item?.let { cardItem -> onSwipe(cardItem.item, direction) }
             },
             offset = offset,
